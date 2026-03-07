@@ -21,15 +21,25 @@ router.get('/google/callback',
 );
 
 // YouTube OAuth Callback (for connecting account)
-router.get('/youtube/callback', requireAuth, async (req: Request, res: Response) => {
-  const { code, error } = req.query;
-  const user = req.user as any;
+router.get('/youtube/callback', async (req: Request, res: Response) => {
+  const { code, error, state } = req.query;
 
   if (error || !code) {
     return res.redirect(`${process.env.FRONTEND_URL}/settings?error=youtube_auth_failed`);
   }
 
   try {
+    // Si no hay usuario en sesión, intentamos recuperarlo del token que pasamos en 'state'
+    let currentUser = req.user as any;
+
+    if (!currentUser && state) {
+      const { verifyToken } = require('../utils/jwt');
+      const decoded = verifyToken(state as string);
+      currentUser = await User.findById(decoded.userId);
+    }
+
+    if (!currentUser) throw new Error('No se pudo identificar al usuario');
+
     const { google } = require('googleapis');
     const oauth2Client = new google.auth.OAuth2(
       process.env.GOOGLE_CLIENT_ID,
@@ -59,11 +69,11 @@ router.get('/youtube/callback', requireAuth, async (req: Request, res: Response)
       expiresAt: tokens.expiry_date ? new Date(tokens.expiry_date) : undefined,
     };
 
-    await User.findByIdAndUpdate(user._id, {
+    await User.findByIdAndUpdate(currentUser._id, {
       $pull: { connectedNetworks: { network: 'youtube' } }
     });
 
-    await User.findByIdAndUpdate(user._id, {
+    await User.findByIdAndUpdate(currentUser._id, {
       $push: { connectedNetworks: networkData }
     });
 
