@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { authAPI, getSocialAuthUrl } from '../services/api';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { CheckCircle2, Link, Unlink, Instagram, Youtube, Facebook, Linkedin, XCircle } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
@@ -44,6 +44,7 @@ export default function SettingsPage() {
   const [igUserToken, setIgUserToken] = useState('');
   const [igUserId, setIgUserId] = useState('');
 
+  const queryClient = useQueryClient();
   const connectedIds = user?.connectedNetworks?.map(n => n.network) || [];
 
   const disconnectMutation = useMutation({
