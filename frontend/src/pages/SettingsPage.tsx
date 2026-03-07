@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { authAPI, getSocialAuthUrl } from '../services/api';
 import { useMutation } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { CheckCircle2, Link, Unlink, Instagram, Youtube, Facebook, Twitter, Linkedin } from 'lucide-react';
+import { CheckCircle2, Link, Unlink, Instagram, Youtube, Facebook, Linkedin } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 
