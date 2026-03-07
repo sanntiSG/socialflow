@@ -20,6 +20,60 @@ router.get('/google/callback',
   }
 );
 
+// YouTube OAuth Callback (for connecting account)
+router.get('/youtube/callback', requireAuth, async (req: Request, res: Response) => {
+  const { code, error } = req.query;
+  const user = req.user as any;
+
+  if (error || !code) {
+    return res.redirect(`${process.env.FRONTEND_URL}/settings?error=youtube_auth_failed`);
+  }
+
+  try {
+    const { google } = require('googleapis');
+    const oauth2Client = new google.auth.OAuth2(
+      process.env.GOOGLE_CLIENT_ID,
+      process.env.GOOGLE_CLIENT_SECRET,
+      `${process.env.BACKEND_URL}/api/auth/youtube/callback`
+    );
+
+    const { tokens } = await oauth2Client.getToken(code as string);
+    oauth2Client.setCredentials(tokens);
+
+    const youtube = google.youtube({ version: 'v3', auth: oauth2Client });
+    const channelRes = await youtube.channels.list({
+      part: ['snippet', 'contentDetails'],
+      mine: true
+    });
+
+    const channel = channelRes.data.items?.[0];
+    if (!channel) throw new Error('No se encontró el canal de YouTube');
+
+    const networkData = {
+      network: 'youtube',
+      accessToken: tokens.access_token,
+      refreshToken: tokens.refresh_token,
+      userId: channel.id,
+      username: channel.snippet.title,
+      avatar: channel.snippet.thumbnails?.default?.url,
+      expiresAt: tokens.expiry_date ? new Date(tokens.expiry_date) : undefined,
+    };
+
+    await User.findByIdAndUpdate(user._id, {
+      $pull: { connectedNetworks: { network: 'youtube' } }
+    });
+
+    await User.findByIdAndUpdate(user._id, {
+      $push: { connectedNetworks: networkData }
+    });
+
+    res.redirect(`${process.env.FRONTEND_URL}/settings?success=youtube_connected`);
+  } catch (err) {
+    console.error('YouTube Auth Error:', err);
+    res.redirect(`${process.env.FRONTEND_URL}/settings?error=youtube_process_failed`);
+  }
+});
+
 // Get current user
 router.get('/me', requireAuth, async (req: Request, res: Response) => {
   try {
