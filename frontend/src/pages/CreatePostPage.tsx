@@ -9,15 +9,63 @@ import { NetworkType, MediaType, PrivacyType } from '../types';
 import toast from 'react-hot-toast';
 import {
   Upload, X, Image, Video, Send, ChevronDown, ChevronUp,
-  Globe, Lock, Users, Eye, Hash, AlertCircle
+  Globe, Lock, Users, Eye, Hash, AlertCircle, CheckCircle2, Layout
 } from 'lucide-react';
 
-const NETWORKS: { id: NetworkType; name: string; color: string; emoji: string }[] = [
-  { id: 'instagram', name: 'Instagram', color: '#E1306C', emoji: '📸' },
-  { id: 'tiktok', name: 'TikTok', color: '#000', emoji: '🎵' },
-  { id: 'youtube', name: 'YouTube', color: '#FF0000', emoji: '▶️' },
-  { id: 'facebook', name: 'Facebook', color: '#1877F2', emoji: '👥' },
+const NETWORKS: { id: NetworkType; name: string }[] = [
+  { id: 'instagram', name: 'Instagram' },
+  { id: 'tiktok', name: 'TikTok' },
+  { id: 'youtube', name: 'YouTube' },
+  { id: 'facebook', name: 'Facebook' },
 ];
+
+const TikTokIcon = ({ size = 18 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M33.5 12.5c0 4.69 3.81 8.5 8.5 8.5v3.5a12 12 0 01-12-12V12.5h3.5z" fill="#00F2EA" />
+    <path d="M29 8h3.5v20.5A8.5 8.5 0 1124 20v3.5A11.5 11.5 0 1032.5 35H29V8z" fill="#FF004F" />
+    <path d="M29 8h3.5v12.5A6 6 0 1124 20v3.5A9.5 9.5 0 0029 8z" fill="#010101" />
+  </svg>
+);
+
+const InstagramIcon = ({ size = 18 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#fff' }}>
+    <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+    <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+  </svg>
+);
+
+const YouTubeIcon = ({ size = 18 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+  </svg>
+);
+
+const FacebookIcon = ({ size = 18 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+  </svg>
+);
+
+const getNetworkIcon = (id: string, size = 18) => {
+  switch (id) {
+    case 'instagram': return <InstagramIcon size={size} />;
+    case 'tiktok': return <TikTokIcon size={size} />;
+    case 'youtube': return <YouTubeIcon size={size} />;
+    case 'facebook': return <FacebookIcon size={size} />;
+    default: return null;
+  }
+};
+
+const getNetworkColor = (id: string) => {
+  switch (id) {
+    case 'instagram': return '#E1306C';
+    case 'tiktok': return '#000';
+    case 'youtube': return '#FF0000';
+    case 'facebook': return '#1877F2';
+    default: return '#6366f1';
+  }
+};
 
 interface NetworkConfig {
   enabled: boolean;
@@ -25,6 +73,7 @@ interface NetworkConfig {
   hashtags: string;
   privacy: PrivacyType;
   scheduleOverride?: string;
+  extraOptions?: Record<string, any>;
 }
 
 const defaultNetworkConfig = (): NetworkConfig => ({
@@ -50,14 +99,24 @@ export default function CreatePostPage() {
   const [publishNow, setPublishNow] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [expandedNetwork, setExpandedNetwork] = useState<NetworkType | null>(null);
+  const [mediaDimensions, setMediaDimensions] = useState({ width: 0, height: 0 });
+  const [duration, setDuration] = useState(0);
   const [networkConfigs, setNetworkConfigs] = useState<Record<NetworkType, NetworkConfig>>({
-    instagram: defaultNetworkConfig(),
+    instagram: { ...defaultNetworkConfig(), extraOptions: { postType: 'auto' } },
     tiktok: defaultNetworkConfig(),
-    youtube: defaultNetworkConfig(),
+    youtube: { ...defaultNetworkConfig(), extraOptions: { postType: 'auto' } },
     facebook: defaultNetworkConfig(),
     twitter: defaultNetworkConfig(),
     linkedin: defaultNetworkConfig(),
   });
+
+  const handleMediaLoad = (e: React.SyntheticEvent<HTMLImageElement | HTMLVideoElement>) => {
+    const target = e.currentTarget;
+    const w = 'videoWidth' in target ? target.videoWidth : target.naturalWidth;
+    const h = 'videoHeight' in target ? target.videoHeight : target.naturalHeight;
+    setMediaDimensions({ width: w, height: h });
+    if ('duration' in target) setDuration(target.duration);
+  };
 
   const onDrop = useCallback((accepted: File[]) => {
     const file = accepted[0];
@@ -169,20 +228,25 @@ export default function CreatePostPage() {
                 <p style={{ fontSize: 12, color: '#94a3b8' }}>Imágenes, videos, GIFs (máx 100MB)</p>
               </div>
             ) : (
-              <div style={{ position: 'relative', borderRadius: 12, overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+              <div style={{ position: 'relative', borderRadius: 12, overflow: 'hidden', border: '1px solid #e2e8f0', background: '#000' }}>
                 {mediaType === 'video' ? (
-                  <video src={mediaPreviewUrl} controls style={{ width: '100%', maxHeight: 220, display: 'block', background: '#000' }} />
+                  <video src={mediaPreviewUrl} controls onLoadedMetadata={handleMediaLoad} style={{ width: '100%', maxHeight: 300, display: 'block' }} />
                 ) : (
-                  <img src={mediaPreviewUrl} alt="preview" style={{ width: '100%', maxHeight: 220, objectFit: 'cover', display: 'block' }} />
+                  <img src={mediaPreviewUrl} alt="preview" onLoad={handleMediaLoad} style={{ width: '100%', maxHeight: 300, objectFit: 'contain', display: 'block' }} />
                 )}
-                <button onClick={() => { setMediaFile(null); setMediaPreviewUrl(''); }}
-                  style={{ position: 'absolute', top: 8, right: 8, width: 28, height: 28, borderRadius: '50%', background: 'rgba(0,0,0,0.6)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <button onClick={() => { setMediaFile(null); setMediaPreviewUrl(''); setMediaDimensions({ width: 0, height: 0 }); setDuration(0); }}
+                  style={{ position: 'absolute', top: 8, right: 8, width: 28, height: 28, borderRadius: '50%', background: 'rgba(0,0,0,0.6)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10 }}>
                   <X size={14} color="white" />
                 </button>
-                <div style={{ position: 'absolute', bottom: 8, left: 8, background: 'rgba(0,0,0,0.6)', borderRadius: 6, padding: '3px 8px', display: 'flex', alignItems: 'center', gap: 4 }}>
-                  {mediaType === 'video' ? <Video size={11} color="white" /> : <Image size={11} color="white" />}
-                  <span style={{ fontSize: 10, color: '#fff', fontWeight: 500 }}>{mediaFile.name.slice(0, 20)}</span>
-                </div>
+                {mediaDimensions.width > 0 && (
+                  <div style={{ position: 'absolute', bottom: 8, left: 8, background: 'rgba(0,0,0,0.7)', borderRadius: 6, padding: '4px 8px', display: 'flex', alignItems: 'center', gap: 6, zIndex: 5 }}>
+                    {mediaType === 'video' ? <Video size={12} color="white" /> : <Image size={12} color="white" />}
+                    <span style={{ fontSize: 11, color: '#fff', fontWeight: 600 }}>
+                      {mediaDimensions.width}x{mediaDimensions.height} · {mediaDimensions.height > mediaDimensions.width ? 'Vertical' : 'Horizontal'}
+                      {duration > 0 && ` · ${Math.round(duration)}s`}
+                    </span>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -215,25 +279,29 @@ export default function CreatePostPage() {
             <h3 style={{ fontSize: 14, fontWeight: 600, color: '#0f172a', marginBottom: 14 }}>Redes sociales</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {NETWORKS.map(network => {
+                const color = getNetworkColor(network.id);
+                const icon = getNetworkIcon(network.id);
                 const cfg = networkConfigs[network.id];
                 const connected = isConnected(network.id);
                 const isExpanded = expandedNetwork === network.id;
 
                 return (
-                  <div key={network.id} style={{ border: `1.5px solid ${cfg.enabled ? network.color + '40' : '#f1f5f9'}`, borderRadius: 12, overflow: 'hidden', transition: 'all 0.2s' }}>
+                  <div key={network.id} style={{ border: `1.5px solid ${cfg.enabled ? color + '40' : '#f1f5f9'}`, borderRadius: 12, overflow: 'hidden', transition: 'all 0.2s' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px' }}>
                       <button
                         onClick={() => connected && toggleNetwork(network.id)}
                         style={{
-                          width: 22, height: 22, borderRadius: 6, border: `2px solid ${cfg.enabled ? network.color : '#e2e8f0'}`,
-                          background: cfg.enabled ? network.color : 'transparent',
+                          width: 22, height: 22, borderRadius: 6, border: `2px solid ${cfg.enabled ? color : '#e2e8f0'}`,
+                          background: cfg.enabled ? color : 'transparent',
                           cursor: connected ? 'pointer' : 'not-allowed', flexShrink: 0,
                           display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s',
                         }}
                       >
-                        {cfg.enabled && <span style={{ fontSize: 12, color: '#fff' }}>✓</span>}
+                        {cfg.enabled && <CheckCircle2 size={14} color="#fff" />}
                       </button>
-                      <span style={{ fontSize: 16 }}>{network.emoji}</span>
+                      <div style={{ width: 24, height: 24, borderRadius: 6, background: color, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+                        {icon}
+                      </div>
                       <span style={{ fontSize: 13, fontWeight: 600, color: '#0f172a', flex: 1 }}>{network.name}</span>
                       {!connected && (
                         <span style={{ fontSize: 10, color: '#94a3b8', background: '#f8fafc', padding: '2px 6px', borderRadius: 4 }}>No conectado</span>
@@ -249,8 +317,36 @@ export default function CreatePostPage() {
                     <AnimatePresence>
                       {cfg.enabled && isExpanded && (
                         <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }}
-                          style={{ overflow: 'hidden', borderTop: `1px solid ${network.color}20` }}>
+                          style={{ overflow: 'hidden', borderTop: `1px solid ${getNetworkColor(network.id)}20` }}>
                           <div style={{ padding: '14px', background: '#fafafa', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                            {/* Smart Format Options */}
+                            {(network.id === 'youtube' || network.id === 'instagram') && (
+                              <div style={{ background: '#fff', padding: 10, borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                                <label style={{ fontSize: 11, fontWeight: 700, color: '#0f172a', display: 'block', marginBottom: 8 }}>Formato inteligente</label>
+                                <div style={{ display: 'flex', gap: 4 }}>
+                                  {network.id === 'youtube' ? (
+                                    <>
+                                      {['auto', 'video', 'short'].map(type => (
+                                        <button key={type} onClick={() => updateNetworkConfig('youtube', { extraOptions: { ...cfg.extraOptions, postType: type } })}
+                                          style={{ flex: 1, padding: '5px', borderRadius: 6, fontSize: 10, fontWeight: 600, textTransform: 'uppercase', border: '1.5px solid', borderColor: cfg.extraOptions?.postType === type ? '#FF0000' : '#e2e8f0', background: cfg.extraOptions?.postType === type ? '#FF000010' : '#fff', color: cfg.extraOptions?.postType === type ? '#FF0000' : '#64748b' }}>
+                                          {type}
+                                        </button>
+                                      ))}
+                                    </>
+                                  ) : (
+                                    <>
+                                      {['auto', 'reel', 'post', 'story'].map(type => (
+                                        <button key={type} onClick={() => updateNetworkConfig('instagram', { extraOptions: { ...cfg.extraOptions, postType: type } })}
+                                          style={{ flex: 1, padding: '5px', borderRadius: 6, fontSize: 10, fontWeight: 600, textTransform: 'uppercase', border: '1.5px solid', borderColor: cfg.extraOptions?.postType === type ? '#E1306C' : '#e2e8f0', background: cfg.extraOptions?.postType === type ? '#E1306C10' : '#fff', color: cfg.extraOptions?.postType === type ? '#E1306C' : '#64748b' }}>
+                                          {type}
+                                        </button>
+                                      ))}
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+
                             <div>
                               <label style={{ fontSize: 11, fontWeight: 600, color: '#64748b', display: 'block', marginBottom: 5 }}>
                                 Texto personalizado para {network.name}
@@ -261,7 +357,7 @@ export default function CreatePostPage() {
                                 placeholder={`Personalizar para ${network.name} (opcional, usa el texto principal si está vacío)`}
                                 rows={2}
                                 style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1.5px solid #e2e8f0', fontSize: 12, resize: 'vertical', fontFamily: 'DM Sans, sans-serif', background: '#fff', outline: 'none' }}
-                                onFocus={e => e.target.style.borderColor = network.color}
+                                onFocus={e => e.target.style.borderColor = getNetworkColor(network.id)}
                                 onBlur={e => e.target.style.borderColor = '#e2e8f0'}
                               />
                             </div>
@@ -285,9 +381,9 @@ export default function CreatePostPage() {
                                     onClick={() => updateNetworkConfig(network.id, { privacy: p.value })}
                                     style={{
                                       display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px',
-                                      borderRadius: 6, border: `1.5px solid ${cfg.privacy === p.value ? network.color : '#e2e8f0'}`,
-                                      background: cfg.privacy === p.value ? `${network.color}10` : '#fff',
-                                      color: cfg.privacy === p.value ? network.color : '#64748b',
+                                      borderRadius: 6, border: `1.5px solid ${cfg.privacy === p.value ? getNetworkColor(network.id) : '#e2e8f0'}`,
+                                      background: cfg.privacy === p.value ? `${getNetworkColor(network.id)}10` : '#fff',
+                                      color: cfg.privacy === p.value ? getNetworkColor(network.id) : '#64748b',
                                       fontSize: 11, cursor: 'pointer', fontWeight: 500, transition: 'all 0.15s',
                                     }}>
                                     {p.icon}{p.label}
@@ -372,12 +468,14 @@ export default function CreatePostPage() {
                   <button key={n.id} onClick={() => setExpandedNetwork(n.id === expandedNetwork ? null : n.id)}
                     style={{
                       display: 'flex', alignItems: 'center', gap: 6, padding: '5px 10px', borderRadius: 8,
-                      border: `1.5px solid ${activePreview === n.id ? n.color : '#e2e8f0'}`,
-                      background: activePreview === n.id ? `${n.color}12` : '#f8fafc',
-                      color: activePreview === n.id ? n.color : '#64748b',
+                      border: `1.5px solid ${activePreview === n.id ? getNetworkColor(n.id) : '#e2e8f0'}`,
+                      background: activePreview === n.id ? `${getNetworkColor(n.id)}12` : '#f8fafc',
+                      color: activePreview === n.id ? getNetworkColor(n.id) : '#64748b',
                       fontSize: 12, cursor: 'pointer', fontWeight: 500, transition: 'all 0.15s',
                     }}>
-                    <span>{n.emoji}</span>
+                    <div style={{ color: activePreview === n.id ? getNetworkColor(n.id) : '#94a3b8', display: 'flex' }}>
+                      {getNetworkIcon(n.id, 14)}
+                    </div>
                     <span>{n.name}</span>
                   </button>
                 ))}
@@ -393,10 +491,14 @@ export default function CreatePostPage() {
                   text={getNetworkText(activePreview as NetworkType)}
                   username={user?.connectedNetworks?.find(n => n.network === activePreview)?.username || user?.name}
                   avatar={user?.avatar}
+                  options={networkConfigs[activePreview as NetworkType]?.extraOptions}
+                  mediaDimensions={mediaDimensions}
                 />
               ) : (
                 <div style={{ textAlign: 'center', padding: 32 }}>
-                  <div style={{ fontSize: 48, marginBottom: 12 }}>👆</div>
+                  <div style={{ color: '#cbd5e1', marginBottom: 16, display: 'flex', justifyContent: 'center' }}>
+                    <Layout size={48} strokeWidth={1.5} />
+                  </div>
                   <p style={{ fontSize: 14, color: '#94a3b8', fontWeight: 500 }}>Seleccioná una red social</p>
                   <p style={{ fontSize: 12, color: '#cbd5e1', marginTop: 4 }}>La vista previa aparecerá aquí</p>
                 </div>

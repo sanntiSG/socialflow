@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { statsAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import { PlusSquare, Clock, CheckCircle2, XCircle, FileText, TrendingUp } from 'lucide-react';
+import { PlusSquare, Clock, CheckCircle2, XCircle, FileText, TrendingUp, Video, Image } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { DashboardStats, Post } from '../types';
@@ -141,8 +141,8 @@ export default function DashboardPage() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {data.recent.map((post: Post) => (
                   <div key={post._id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: '1px solid #f8fafc' }}>
-                    <div style={{ width: 36, height: 36, borderRadius: 8, background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      {post.mediaType === 'video' ? '🎬' : post.mediaType === 'image' ? '🖼️' : '📝'}
+                    <div style={{ width: 36, height: 36, borderRadius: 8, background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: '#6366f1' }}>
+                      {post.mediaType === 'video' ? <Video size={18} /> : post.mediaType === 'image' ? <Image size={18} /> : <FileText size={18} />}
                     </div>
                     <div style={{ flex: 1, overflow: 'hidden' }}>
                       <p style={{ fontSize: 13, fontWeight: 500, color: '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>

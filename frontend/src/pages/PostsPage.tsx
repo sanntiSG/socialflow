@@ -5,7 +5,7 @@ import { postsAPI } from '../services/api';
 import { Post, PostStatus } from '../types';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Trash2, FileText, Clock, Video } from 'lucide-react';
+import { Trash2, FileText, Clock, Video, Inbox } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 
@@ -75,7 +75,9 @@ export default function PostsPage() {
         </div>
       ) : posts.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '64px 24px', background: '#fff', borderRadius: 16, border: '1px solid #f1f5f9' }}>
-          <div style={{ fontSize: 48, marginBottom: 12 }}>📭</div>
+          <div style={{ color: '#cbd5e1', marginBottom: 12, display: 'flex', justifyContent: 'center' }}>
+            <Inbox size={48} />
+          </div>
           <p style={{ fontSize: 16, fontWeight: 600, color: '#475569', marginBottom: 6 }}>No hay publicaciones</p>
           <p style={{ fontSize: 13, color: '#94a3b8', marginBottom: 16 }}>
             {filter !== 'all' ? 'Sin publicaciones en esta categoría' : 'Creá tu primera publicación'}

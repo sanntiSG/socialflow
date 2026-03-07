@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { authAPI, getSocialAuthUrl } from '../services/api';
 import { useMutation } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { CheckCircle2, Link, Unlink, Instagram, Youtube, Facebook, Linkedin } from 'lucide-react';
+import { CheckCircle2, Link, Unlink, Instagram, Youtube, Facebook, Linkedin, XCircle } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -39,6 +39,7 @@ const SUPPORTED_NETWORKS = [
 export default function SettingsPage() {
   const { user, refreshUser } = useAuth();
   const [showIPHelper, setShowIPHelper] = useState(false);
+  const [showIGHelper, setShowIGHelper] = useState(false);
 
   const connectedIds = user?.connectedNetworks?.map(n => n.network) || [];
 
@@ -151,24 +152,75 @@ export default function SettingsPage() {
                     </button>
                   </div>
                 ) : (
-                  <button onClick={() => handleConnect(network.id)}
-                    style={{
-                      width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                      padding: '8px', borderRadius: 8, border: `1.5px solid ${network.color}`,
-                      background: '#fff', color: network.color, fontSize: 12, cursor: 'pointer', fontWeight: 600,
-                      transition: 'all 0.15s',
-                    }}
-                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = `${network.color}10`; }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = '#fff'; }}>
-                    <Link size={13} />
-                    Conectar {network.name}
-                  </button>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <button onClick={() => handleConnect(network.id)}
+                      style={{
+                        width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                        padding: '8px', borderRadius: 8, border: `1.5px solid ${network.color}`,
+                        background: '#fff', color: network.color, fontSize: 12, cursor: 'pointer', fontWeight: 600,
+                        transition: 'all 0.15s',
+                      }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = `${network.color}10`; }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = '#fff'; }}>
+                      <Link size={13} />
+                      Conectar {network.name}
+                    </button>
+                    {network.id === 'instagram' && (
+                      <button onClick={() => setShowIGHelper(!showIGHelper)}
+                        style={{ border: 'none', background: 'none', color: '#64748b', fontSize: 10, cursor: 'pointer', textDecoration: 'underline', textAlign: 'center' }}>
+                        ¿Cómo conectar mi Instagram? (Requisitos)
+                      </button>
+                    )}
+                  </div>
                 )}
               </motion.div>
             );
           })}
         </div>
       </motion.div>
+
+      {/* Instagram Helper */}
+      <AnimatePresence>
+        {showIGHelper && (
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+            style={{ background: '#fff', borderRadius: 16, padding: 24, border: '1px solid #fde68a', boxShadow: '0 4px 12px rgba(253,230,138,0.2)', marginBottom: 20, overflow: 'hidden' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Instagram size={20} color="#E1306C" />
+                <h2 style={{ fontSize: 16, fontWeight: 700, color: '#0f172a' }}>Guía de conexión para Instagram</h2>
+              </div>
+              <button onClick={() => setShowIGHelper(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
+                <XCircle size={20} color="#94a3b8" />
+              </button>
+            </div>
+            <p style={{ fontSize: 13, color: '#475569', marginBottom: 16, lineHeight: 1.5 }}>
+              Para poder publicar fotos y Reels desde SocialFlow, Instagram exige por seguridad que tu cuenta sea de tipo <strong>Profesional (Business o Creador)</strong> y esté vinculada a una <strong>Página de Facebook</strong>. Solo usaremos los permisos para subir contenido en tu nombre.
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
+              <div style={{ padding: 12, background: '#fffbeb', borderRadius: 10, border: '1px solid #fef3c7' }}>
+                <span style={{ fontSize: 18, fontWeight: 800, color: '#d97706', display: 'block', marginBottom: 4 }}>1</span>
+                <p style={{ fontSize: 12, color: '#92400e', fontWeight: 600 }}>Cambio a Profesional</p>
+                <p style={{ fontSize: 11, color: '#b45309', marginTop: 4 }}>En la app de Instagram: Configuración → Tipo de cuenta → <strong>Cambiar a cuenta profesional</strong>.</p>
+              </div>
+              <div style={{ padding: 12, background: '#fffbeb', borderRadius: 10, border: '1px solid #fef3c7' }}>
+                <span style={{ fontSize: 18, fontWeight: 800, color: '#d97706', display: 'block', marginBottom: 4 }}>2</span>
+                <p style={{ fontSize: 12, color: '#92400e', fontWeight: 600 }}>Vincular a Facebook</p>
+                <p style={{ fontSize: 11, color: '#b45309', marginTop: 4 }}>Creá una Página de Facebook (o usá una existente) y en <strong>Cuentas Vinculadas</strong> agregá tu Instagram.</p>
+              </div>
+              <div style={{ padding: 12, background: '#fffbeb', borderRadius: 10, border: '1px solid #fef3c7' }}>
+                <span style={{ fontSize: 18, fontWeight: 800, color: '#d97706', display: 'block', marginBottom: 4 }}>3</span>
+                <p style={{ fontSize: 12, color: '#92400e', fontWeight: 600 }}>Conectar aquí</p>
+                <p style={{ fontSize: 11, color: '#b45309', marginTop: 4 }}>Hacé clic en el botón naranja de arriba. Te pedirá permiso para acceder a tu página y cuenta de IG.</p>
+              </div>
+            </div>
+            <div style={{ marginTop: 16, padding: '8px 12px', background: '#f0f9ff', borderRadius: 8, border: '1px solid #bae6fd' }}>
+              <p style={{ fontSize: 11, color: '#0369a1' }}>
+                💡 <strong>Nota:</strong> Si ya tenés todo configurado, simplemente dale a "Continuar" en la ventana de Facebook que se abrirá.
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* IP Helper */}
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}

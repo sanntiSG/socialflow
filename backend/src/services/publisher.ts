@@ -96,29 +96,61 @@ const publishToFacebook = async (opts: any) => {
 };
 
 const publishToInstagram = async (opts: any) => {
-  // Step 1: Create media container
-  const containerResponse = await axios.post(
-    `https://graph.facebook.com/v18.0/${opts.userId}/media`,
-    {
-      access_token: opts.accessToken,
-      caption: opts.text,
-      ...(opts.mediaType === 'video' ? { video_url: opts.mediaUrl, media_type: 'REELS' } : { image_url: opts.mediaUrl }),
+  console.log(`[Instagram] Publicando ${opts.mediaType} en @${opts.userId}`);
+
+  const isVideo = opts.mediaType === 'video';
+  const postType = opts.extraOptions?.postType || 'auto';
+  const isReel = postType === 'reel' || (postType === 'auto' && isVideo);
+
+  // Paso 1: Crear el contenedor del medio
+  const mediaEndpoint = `https://graph.facebook.com/v18.0/${opts.userId}/media`;
+  const mediaParams: any = {
+    access_token: opts.accessToken,
+    caption: opts.text,
+  };
+
+  if (isVideo) {
+    mediaParams.video_url = opts.mediaUrl;
+    mediaParams.media_type = 'REELS'; // Reels es el formato estándar ahora para videos
+  } else {
+    mediaParams.image_url = opts.mediaUrl;
+  }
+
+  console.log(`[Instagram] Creando contenedor...`);
+  const containerResponse = await axios.post(mediaEndpoint, mediaParams);
+  const creationId = containerResponse.data.id;
+  console.log(`[Instagram] Contenedor creado: ${creationId}`);
+
+  // Paso 2: Para videos/Reels, debemos esperar a que se procese
+  if (isVideo) {
+    let status = 'IN_PROGRESS';
+    let attempts = 0;
+    while (status !== 'FINISHED' && attempts < 10) {
+      console.log(`[Instagram] Verificando estado del contenedor (intento ${attempts + 1})...`);
+      const statusRes = await axios.get(`https://graph.facebook.com/v18.0/${creationId}`, {
+        params: { fields: 'status_code', access_token: opts.accessToken }
+      });
+      status = statusRes.data.status_code;
+      if (status === 'FINISHED') break;
+      if (status === 'ERROR') throw new Error('Error al procesar el video en Instagram');
+
+      await new Promise(resolve => setTimeout(resolve, 5000));
+      attempts++;
     }
-  );
+  }
 
-  const containerId = containerResponse.data.id;
-
-  // Step 2: Publish container
-  const publishResponse = await axios.post(
+  // Paso 3: Publicar el contenedor
+  console.log(`[Instagram] Publicando medio...`);
+  const publishRes = await axios.post(
     `https://graph.facebook.com/v18.0/${opts.userId}/media_publish`,
-    { access_token: opts.accessToken, creation_id: containerId }
+    { access_token: opts.accessToken, creation_id: creationId }
   );
 
-  return publishResponse.data;
+  return publishRes.data;
 };
 
 const publishToTikTok = async (opts: any) => {
-  // TikTok Content Posting API
+  console.log(`[TikTok] Publicando video...`);
   const response = await axios.post(
     'https://open.tiktokapis.com/v2/post/publish/video/init/',
     {
@@ -144,6 +176,17 @@ const publishToYouTube = async (opts: any) => {
 
   const youtube = google.youtube({ version: 'v3', auth: oauth2Client });
 
+  // Determinar si es un Short basado en opciones o dimensiones (si tuviéramos las dimensiones aquí)
+  // Por ahora confiamos en extraOptions.postType
+  const postType = opts.extraOptions?.postType || 'auto';
+  let title = opts.text ? opts.text.substring(0, 100) : 'Nuevo video de SocialFlow';
+
+  if (postType === 'short' || (postType === 'auto' && title.toLowerCase().includes('#shorts'))) {
+    if (!title.toLowerCase().includes('#shorts')) {
+      title = `${title} #Shorts`;
+    }
+  }
+
   console.log(`[YouTube] Descargando video de ${opts.mediaUrl}...`);
   const response = await axios({
     method: 'GET',
@@ -151,16 +194,18 @@ const publishToYouTube = async (opts: any) => {
     responseType: 'stream',
   });
 
-  console.log(`[YouTube] Iniciando inserción de video...`);
+  console.log(`[YouTube] Iniciando inserción de video (${postType})...`);
   const uploadRes = await youtube.videos.insert({
     part: ['snippet', 'status'],
     requestBody: {
       snippet: {
-        title: opts.text ? opts.text.substring(0, 100) : 'Nuevo video de SocialFlow',
+        title: title,
         description: opts.text,
+        categoryId: '22', // People & Blogs
       },
       status: {
         privacyStatus: opts.privacy === 'unlisted' ? 'unlisted' : 'public',
+        selfDeclaredMadeForKids: false,
       },
     },
     media: {
@@ -168,5 +213,6 @@ const publishToYouTube = async (opts: any) => {
     },
   });
 
+  console.log(`[YouTube] Video subido: ${uploadRes.data.id}`);
   return uploadRes.data;
 };
