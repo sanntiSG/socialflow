@@ -1,6 +1,6 @@
 import React from 'react';
 import { NetworkType, MediaType } from '../../types';
-import { Heart, MessageCircle, Share2, Bookmark, MoreHorizontal, ThumbsUp, Eye, Play, Video } from 'lucide-react';
+import { Heart, MessageCircle, Share2, Bookmark, MoreHorizontal, ThumbsUp, Eye, Video } from 'lucide-react';
 
 export interface PreviewProps {
   network: NetworkType;
