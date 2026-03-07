@@ -9,10 +9,17 @@ export const requireAuth = async (req: Request, res: Response, next: NextFunctio
       return next();
     }
 
-    // Check JWT Bearer token
+    // Check JWT Bearer token or Query param
     const authHeader = req.headers.authorization;
+    let token = '';
+
     if (authHeader?.startsWith('Bearer ')) {
-      const token = authHeader.substring(7);
+      token = authHeader.substring(7);
+    } else if (req.query.token) {
+      token = req.query.token as string;
+    }
+
+    if (token) {
       const decoded = verifyToken(token);
       const user = await User.findById(decoded.userId);
       if (user) {

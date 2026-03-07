@@ -49,7 +49,8 @@ export default function SettingsPage() {
   });
 
   const handleConnect = (networkId: string) => {
-    window.location.href = getSocialAuthUrl(networkId);
+    const token = localStorage.getItem('sf_token');
+    window.location.href = `${getSocialAuthUrl(networkId)}?token=${token}`;
   };
 
   const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
