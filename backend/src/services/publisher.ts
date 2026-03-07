@@ -82,7 +82,7 @@ const publishToFacebook = async (opts: any) => {
   const endpoint = opts.mediaUrl
     ? `https://graph.facebook.com/v18.0/${opts.userId}/photos`
     : `https://graph.facebook.com/v18.0/${opts.userId}/feed`;
-  
+
   const params: any = { access_token: opts.accessToken, message: opts.text };
   if (opts.mediaUrl && opts.mediaType === 'image') params.url = opts.mediaUrl;
 
@@ -126,13 +126,37 @@ const publishToTikTok = async (opts: any) => {
 };
 
 const publishToYouTube = async (opts: any) => {
-  const response = await axios.post(
-    'https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status',
-    {
-      snippet: { title: opts.text || 'Mi video', description: opts.text },
-      status: { privacyStatus: opts.privacy === 'public' ? 'public' : opts.privacy },
-    },
-    { headers: { Authorization: `Bearer ${opts.accessToken}` } }
+  const { google } = require('googleapis');
+  const oauth2Client = new google.auth.OAuth2(
+    process.env.GOOGLE_CLIENT_ID,
+    process.env.GOOGLE_CLIENT_SECRET
   );
-  return response.data;
+
+  oauth2Client.setCredentials({ access_token: opts.accessToken });
+  const youtube = google.youtube({ version: 'v3', auth: oauth2Client });
+
+  // Descargamos el video desde Cloudinary a un stream
+  const response = await axios({
+    method: 'GET',
+    url: opts.mediaUrl,
+    responseType: 'stream',
+  });
+
+  const uploadRes = await youtube.videos.insert({
+    part: ['snippet', 'status'],
+    requestBody: {
+      snippet: {
+        title: opts.text ? opts.text.substring(0, 100) : 'Nuevo video de SocialFlow',
+        description: opts.text,
+      },
+      status: {
+        privacyStatus: opts.privacy === 'unlisted' ? 'unlisted' : 'public',
+      },
+    },
+    media: {
+      body: response.data,
+    },
+  });
+
+  return uploadRes.data;
 };
