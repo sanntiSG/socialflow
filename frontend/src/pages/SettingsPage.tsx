@@ -67,8 +67,7 @@ export default function SettingsPage() {
       case 'facebook':
         return <Facebook size={18} color="#ffffff" />;
       case 'twitter':
-        // usamos el icono de Twitter (lucide) como sustituto visual de X
-        return <Twitter size={18} color="#ffffff" />;
+        return <XIcon size={18} />;
       case 'linkedin':
         return <Linkedin size={18} color="#ffffff" />;
       default:
