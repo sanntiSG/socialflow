@@ -25,8 +25,10 @@ export const publishPost = async (postId: string, userId: string): Promise<void>
     }
 
     try {
+      console.log(`[Publisher] Iniciando subida a ${networkPost.network}...`);
       await publishToNetwork(networkPost.network, {
         accessToken: connectedNetwork.accessToken,
+        refreshToken: connectedNetwork.refreshToken,
         userId: connectedNetwork.userId,
         text: networkPost.text,
         mediaUrl: post.mediaUrl,
@@ -35,9 +37,11 @@ export const publishPost = async (postId: string, userId: string): Promise<void>
         extraOptions: networkPost.extraOptions,
       });
 
+      console.log(`[Publisher] Éxito en ${networkPost.network}`);
       networkPost.status = 'published';
       networkPost.publishedAt = new Date();
     } catch (error: any) {
+      console.error(`[Publisher] Error en ${networkPost.network}:`, error.message);
       networkPost.status = 'failed';
       networkPost.error = error.message;
       allSuccess = false;
@@ -57,6 +61,7 @@ export const publishPost = async (postId: string, userId: string): Promise<void>
 
 const publishToNetwork = async (network: string, options: {
   accessToken: string;
+  refreshToken?: string;
   userId: string;
   text: string;
   mediaUrl?: string;
@@ -132,16 +137,21 @@ const publishToYouTube = async (opts: any) => {
     process.env.GOOGLE_CLIENT_SECRET
   );
 
-  oauth2Client.setCredentials({ access_token: opts.accessToken });
+  oauth2Client.setCredentials({
+    access_token: opts.accessToken,
+    refresh_token: opts.refreshToken
+  });
+
   const youtube = google.youtube({ version: 'v3', auth: oauth2Client });
 
-  // Descargamos el video desde Cloudinary a un stream
+  console.log(`[YouTube] Descargando video de ${opts.mediaUrl}...`);
   const response = await axios({
     method: 'GET',
     url: opts.mediaUrl,
     responseType: 'stream',
   });
 
+  console.log(`[YouTube] Iniciando inserción de video...`);
   const uploadRes = await youtube.videos.insert({
     part: ['snippet', 'status'],
     requestBody: {
