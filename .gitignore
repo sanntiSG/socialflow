@@ -1,8 +1,21 @@
+# Dependencias
 node_modules/
+**/node_modules/
+
+# Archivos de build
 dist/
+**/dist/
 build/
+**/build/
+
+# Variables de entorno (Súper importante)
 .env
 .env.local
+.env.*
+**/.env
+**/.env.*
+
+# Logs y misceláneos
 *.log
 .DS_Store
 Thumbs.db
