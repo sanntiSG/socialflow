@@ -8,7 +8,7 @@ import NetworkPreview from '../components/preview/NetworkPreview';
 import { NetworkType, MediaType, PrivacyType } from '../types';
 import toast from 'react-hot-toast';
 import {
-  Upload, X, Image, Video, Send, ChevronDown, ChevronUp,
+  Upload, X, Image as ImageIcon, Video, Send, ChevronDown, ChevronUp,
   Globe, Lock, Users, Eye, Hash, AlertCircle, CheckCircle2, Layout
 } from 'lucide-react';
 
@@ -240,7 +240,7 @@ export default function CreatePostPage() {
                 </button>
                 {mediaDimensions.width > 0 && (
                   <div style={{ position: 'absolute', bottom: 8, left: 8, background: 'rgba(0,0,0,0.7)', borderRadius: 6, padding: '4px 8px', display: 'flex', alignItems: 'center', gap: 6, zIndex: 5 }}>
-                    {mediaType === 'video' ? <Video size={12} color="white" /> : <Image size={12} color="white" />}
+                    {mediaType === 'video' ? <Video size={12} color="white" /> : <ImageIcon size={12} color="white" />}
                     <span style={{ fontSize: 11, color: '#fff', fontWeight: 600 }}>
                       {mediaDimensions.width}x{mediaDimensions.height} · {mediaDimensions.height > mediaDimensions.width ? 'Vertical' : 'Horizontal'}
                       {duration > 0 && ` · ${Math.round(duration)}s`}
