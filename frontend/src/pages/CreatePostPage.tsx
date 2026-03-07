@@ -103,14 +103,11 @@ export default function CreatePostPage() {
       let mediaUrl: string | undefined;
       let mediaPublicId: string | undefined;
 
-      // Upload to Cloudinary only if scheduled
-      if (mediaFile && !publishNow && scheduledAt) {
+      // Upload to Cloudinary (always if media exists, so backend can access it)
+      if (mediaFile) {
         const { data } = await postsAPI.upload(mediaFile);
         mediaUrl = data.url;
         mediaPublicId = data.publicId;
-      } else if (mediaFile) {
-        // For immediate: convert to base64 or use object URL
-        mediaUrl = mediaPreviewUrl;
       }
 
       const networks = selectedNetworks.map(n => ({
