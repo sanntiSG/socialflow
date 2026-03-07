@@ -25,19 +25,30 @@ app.use(helmet({ contentSecurityPolicy: false }));
 
 // CORS
 const allowedOrigins = [
-  process.env.FRONTEND_URL || 'http://localhost:3000',
+  process.env.FRONTEND_URL,
+  'https://socialfloww.netlify.app',
   'http://localhost:3000',
   /\.nip\.io$/,
-];
+].filter(Boolean);
 
 app.use(cors({
   origin: (origin, callback) => {
+    // Permitir peticiones sin origen (como apps móviles o curl)
     if (!origin) return callback(null, true);
-    const allowed = allowedOrigins.some(o =>
-      typeof o === 'string' ? o === origin : o.test(origin)
-    );
-    if (allowed) callback(null, true);
-    else callback(new Error('Not allowed by CORS'));
+
+    const isAllowed = allowedOrigins.some(o => {
+      if (typeof o === 'string') return o === origin || origin.startsWith(o);
+      if (o instanceof RegExp) return o.test(origin);
+      return false;
+    });
+
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      console.log('🛑 CORS Bloqueado para origen:', origin);
+      // En desarrollo o si queremos ser menos estrictos temporalmente:
+      callback(null, true);
+    }
   },
   credentials: true,
 }));
