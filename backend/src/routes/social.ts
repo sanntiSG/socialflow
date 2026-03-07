@@ -1,0 +1,22 @@
+import { Router, Request, Response } from 'express';
+import { requireAuth } from '../middleware/auth';
+
+const router = Router();
+
+// Placeholder for social OAuth flows
+// Each network has its own OAuth redirect
+router.get('/:network/auth', requireAuth, (req: Request, res: Response) => {
+  const { network } = req.params;
+  const oauthUrls: Record<string, string> = {
+    facebook: `https://www.facebook.com/v18.0/dialog/oauth?client_id=${process.env.FACEBOOK_APP_ID}&redirect_uri=${process.env.BACKEND_URL}/api/social/facebook/callback&scope=pages_manage_posts,pages_read_engagement,instagram_basic,instagram_content_publish`,
+    tiktok: `https://www.tiktok.com/v2/auth/authorize?client_key=${process.env.TIKTOK_CLIENT_KEY}&redirect_uri=${process.env.BACKEND_URL}/api/social/tiktok/callback&scope=user.info.basic,video.publish&response_type=code`,
+    youtube: `https://accounts.google.com/o/oauth2/v2/auth?client_id=${process.env.YOUTUBE_CLIENT_ID}&redirect_uri=${process.env.BACKEND_URL}/api/social/youtube/callback&scope=https://www.googleapis.com/auth/youtube.upload&response_type=code&access_type=offline`,
+    instagram: `https://www.facebook.com/v18.0/dialog/oauth?client_id=${process.env.INSTAGRAM_APP_ID}&redirect_uri=${process.env.BACKEND_URL}/api/social/instagram/callback&scope=instagram_basic,instagram_content_publish`,
+  };
+
+  const url = oauthUrls[network];
+  if (!url) return res.status(400).json({ error: 'Red social no soportada' });
+  res.redirect(url);
+});
+
+export default router;
