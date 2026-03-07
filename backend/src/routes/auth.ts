@@ -169,6 +169,63 @@ router.get('/instagram/callback', async (req: Request, res: Response) => {
   }
 });
 
+// Facebook OAuth Callback
+router.get('/facebook/callback', async (req: Request, res: Response) => {
+  const { code, state, error } = req.query;
+
+  if (error || !code) {
+    return res.redirect(`${process.env.FRONTEND_URL}/settings?error=facebook_auth_failed`);
+  }
+
+  try {
+    const axios = require('axios');
+    const { verifyToken } = require('../utils/jwt');
+    const decoded = verifyToken(state as string);
+    const currentUser = await User.findById(decoded.userId);
+
+    if (!currentUser) throw new Error('Usuario no encontrado');
+
+    // 1. Intercambiar código por token
+    const tokenRes = await axios.get('https://graph.facebook.com/v18.0/oauth/access_token', {
+      params: {
+        client_id: process.env.FACEBOOK_APP_ID,
+        client_secret: process.env.FACEBOOK_APP_SECRET,
+        redirect_uri: `${process.env.BACKEND_URL}/api/auth/facebook/callback`,
+        code
+      }
+    });
+
+    const accessToken = tokenRes.data.access_token;
+
+    // 2. Obtener info del perfil
+    const meRes = await axios.get('https://graph.facebook.com/v18.0/me', {
+      params: { access_token: accessToken, fields: 'id,name,picture' }
+    });
+
+    const networkData = {
+      network: 'facebook',
+      accessToken: accessToken,
+      userId: meRes.data.id,
+      username: meRes.data.name,
+      avatar: meRes.data.picture?.data?.url,
+      connectedAt: new Date(),
+    };
+
+    await User.findByIdAndUpdate(currentUser._id, {
+      $pull: { connectedNetworks: { network: 'facebook' } }
+    });
+
+    await User.findByIdAndUpdate(currentUser._id, {
+      $push: { connectedNetworks: networkData }
+    });
+
+    res.redirect(`${process.env.FRONTEND_URL}/settings?success=facebook_connected`);
+  } catch (err: any) {
+    console.error('Facebook Connect Error:', err.message);
+    res.redirect(`${process.env.FRONTEND_URL}/settings?error=facebook_process_failed`);
+  }
+});
+
 // Get current user
 router.get('/me', requireAuth, async (req: Request, res: Response) => {
   try {
