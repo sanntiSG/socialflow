@@ -4,17 +4,36 @@ import { useAuth } from '../context/AuthContext';
 import { authAPI, getSocialAuthUrl } from '../services/api';
 import { useMutation } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { CheckCircle2, Link, Unlink } from 'lucide-react';
+import { CheckCircle2, Link, Unlink, Instagram, Youtube, Facebook, Twitter, Linkedin } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 
+/* ---------- Icon SVGs for networks not present / official logos ---------- */
+
+const TikTokIcon = ({ size = 18 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+    <path d="M33.5 12.5c0 4.69 3.81 8.5 8.5 8.5v3.5a12 12 0 01-12-12V12.5h3.5z" fill="#00F2EA" />
+    <path d="M29 8h3.5v20.5A8.5 8.5 0 1124 20v3.5A11.5 11.5 0 1032.5 35H29V8z" fill="#FF004F" />
+    <path d="M29 8h3.5v12.5A6 6 0 1124 20v3.5A9.5 9.5 0 0029 8z" fill="#010101" />
+  </svg>
+);
+
+const XIcon = ({ size = 18 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+    <path d="M5 4L19 20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M19 4L5 20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+/* ----------------------------------------------------------------------- */
+
 const SUPPORTED_NETWORKS = [
-  { id: 'instagram', name: 'Instagram', color: '#E1306C', bg: 'linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)', emoji: '📸', desc: 'Posts, Reels, Stories' },
-  { id: 'tiktok', name: 'TikTok', color: '#000', bg: '#000', emoji: '🎵', desc: 'Videos y Shorts' },
-  { id: 'youtube', name: 'YouTube', color: '#FF0000', bg: '#FF0000', emoji: '▶️', desc: 'Videos y Shorts' },
-  { id: 'facebook', name: 'Facebook', color: '#1877F2', bg: '#1877F2', emoji: '👥', desc: 'Posts y Videos' },
-  { id: 'twitter', name: 'X (Twitter)', color: '#000', bg: '#000', emoji: '𝕏', desc: 'Tweets y videos' },
-  { id: 'linkedin', name: 'LinkedIn', color: '#0A66C2', bg: '#0A66C2', emoji: '💼', desc: 'Posts profesionales' },
+  { id: 'instagram', name: 'Instagram', color: '#E1306C', bg: 'linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)', desc: 'Posts, Reels, Stories' },
+  { id: 'tiktok', name: 'TikTok', color: '#000', bg: '#000', desc: 'Videos y Shorts' },
+  { id: 'youtube', name: 'YouTube', color: '#FF0000', bg: '#FF0000', desc: 'Videos y Shorts' },
+  { id: 'facebook', name: 'Facebook', color: '#1877F2', bg: '#1877F2', desc: 'Posts y Videos' },
+  { id: 'twitter', name: 'X (Twitter)', color: '#000', bg: '#000', desc: 'Tweets y videos' },
+  { id: 'linkedin', name: 'LinkedIn', color: '#0A66C2', bg: '#0A66C2', desc: 'Posts profesionales' },
 ];
 
 export default function SettingsPage() {
@@ -34,6 +53,27 @@ export default function SettingsPage() {
   };
 
   const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
+  const renderNetworkIcon = (networkId: string) => {
+    // Usamos lucide-react cuando existe y SVGs oficiales cuando hace falta
+    switch (networkId) {
+      case 'instagram':
+        return <Instagram size={18} color="#ffffff" />;
+      case 'tiktok':
+        return <TikTokIcon size={18} />;
+      case 'youtube':
+        return <Youtube size={18} color="#ffffff" />;
+      case 'facebook':
+        return <Facebook size={18} color="#ffffff" />;
+      case 'twitter':
+        // usamos el icono de Twitter (lucide) como sustituto visual de X
+        return <Twitter size={18} color="#ffffff" />;
+      case 'linkedin':
+        return <Linkedin size={18} color="#ffffff" />;
+      default:
+        return <div style={{ width: 18, height: 18 }} />;
+    }
+  };
 
   return (
     <div>
@@ -82,8 +122,12 @@ export default function SettingsPage() {
                   transition: 'all 0.2s',
                 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-                  <div style={{ width: 36, height: 36, borderRadius: 10, background: network.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17 }}>
-                    {network.emoji}
+                  <div style={{
+                    width: 36, height: 36, borderRadius: 10, background: network.bg,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, color: '#fff',
+                    overflow: 'hidden'
+                  }}>
+                    {renderNetworkIcon(network.id)}
                   </div>
                   <div style={{ flex: 1 }}>
                     <p style={{ fontSize: 14, fontWeight: 600, color: '#0f172a' }}>{network.name}</p>
@@ -114,8 +158,8 @@ export default function SettingsPage() {
                       background: '#fff', color: network.color, fontSize: 12, cursor: 'pointer', fontWeight: 600,
                       transition: 'all 0.15s',
                     }}
-                    onMouseEnter={e => { e.currentTarget.style.background = `${network.color}10`; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = '#fff'; }}>
+                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = `${network.color}10`; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = '#fff'; }}>
                     <Link size={13} />
                     Conectar {network.name}
                   </button>
