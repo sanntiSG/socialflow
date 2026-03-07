@@ -40,6 +40,9 @@ export default function SettingsPage() {
   const { user, refreshUser } = useAuth();
   const [showIPHelper, setShowIPHelper] = useState(false);
   const [showIGHelper, setShowIGHelper] = useState(false);
+  const [showIGManual, setShowIGManual] = useState(false);
+  const [igUserToken, setIgUserToken] = useState('');
+  const [igUserId, setIgUserId] = useState('');
 
   const connectedIds = user?.connectedNetworks?.map(n => n.network) || [];
 
@@ -48,6 +51,31 @@ export default function SettingsPage() {
     onSuccess: () => { refreshUser(); toast.success('Red social desconectada'); },
     onError: () => toast.error('Error al desconectar'),
   });
+
+  const connectManualMutation = useMutation({
+    mutationFn: (data: any) => authAPI.connectNetwork(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['me'] });
+      toast.success('Instagram conectado manualmente');
+      setShowIGManual(false);
+      setIgUserToken('');
+      setIgUserId('');
+    },
+    onError: () => toast.error('Error al conectar manualmente'),
+  });
+
+  const handleManualIGConnect = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!igUserToken || !igUserId) return toast.error('Completá ambos campos');
+
+    connectManualMutation.mutate({
+      network: 'instagram',
+      accessToken: igUserToken,
+      userId: igUserId,
+      username: 'Cuenta Manual',
+      avatar: '',
+    });
+  };
 
   const handleConnect = (networkId: string) => {
     const token = localStorage.getItem('sf_token');
@@ -166,10 +194,16 @@ export default function SettingsPage() {
                       Conectar {network.name}
                     </button>
                     {network.id === 'instagram' && (
-                      <button onClick={() => setShowIGHelper(!showIGHelper)}
-                        style={{ border: 'none', background: 'none', color: '#64748b', fontSize: 10, cursor: 'pointer', textDecoration: 'underline', textAlign: 'center' }}>
-                        ¿Cómo conectar mi Instagram? (Requisitos)
-                      </button>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                        <button onClick={() => setShowIGHelper(!showIGHelper)}
+                          style={{ border: 'none', background: 'none', color: '#64748b', fontSize: 10, cursor: 'pointer', textDecoration: 'underline', textAlign: 'center' }}>
+                          ¿Cómo conectar mi Instagram? (Requisitos)
+                        </button>
+                        <button onClick={() => setShowIGManual(!showIGManual)}
+                          style={{ border: 'none', background: 'none', color: '#6366f1', fontSize: 10, cursor: 'pointer', textDecoration: 'underline', textAlign: 'center' }}>
+                          Conexión Manual (Si falla el botón)
+                        </button>
+                      </div>
                     )}
                   </div>
                 )}
@@ -178,6 +212,45 @@ export default function SettingsPage() {
           })}
         </div>
       </motion.div>
+
+      {/* Instagram Manual Connect */}
+      <AnimatePresence>
+        {showIGManual && (
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+            style={{ background: '#fff', borderRadius: 16, padding: 24, border: '1px solid #e0e7ff', boxShadow: '0 4px 12px rgba(99,102,241,0.1)', marginBottom: 20, overflow: 'hidden' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Instagram size={20} color="#6366f1" />
+                <h2 style={{ fontSize: 16, fontWeight: 700, color: '#0f172a' }}>Conexión Manual de Instagram</h2>
+              </div>
+              <button onClick={() => setShowIGManual(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
+                <XCircle size={20} color="#94a3b8" />
+              </button>
+            </div>
+
+            <p style={{ fontSize: 13, color: '#475569', marginBottom: 20, lineHeight: 1.5 }}>
+              Si el flujo automático de Facebook te da errores de "Portfolio" o "Privacidad", puedes usar un <strong>Token de Larga Duración</strong> generado desde el portal de desarrolladores.
+            </p>
+
+            <form onSubmit={handleManualIGConnect} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 6 }}>Instagram Business Account ID</label>
+                <input type="text" value={igUserId} onChange={(e) => setIgUserId(e.target.value)} placeholder="Ej: 178414012345678"
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 13 }} />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 6 }}>Access Token (Larga duración)</label>
+                <textarea value={igUserToken} onChange={(e) => setIgUserToken(e.target.value)} placeholder="EEA..."
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 12, minHeight: 80, fontFamily: 'monospace' }} />
+              </div>
+              <button type="submit" disabled={connectManualMutation.isPending}
+                style={{ background: '#6366f1', color: '#fff', border: 'none', padding: '12px', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+                {connectManualMutation.isPending ? 'Conectando...' : 'Guardar Conexión'}
+              </button>
+            </form>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Instagram Helper */}
       <AnimatePresence>
