@@ -43,6 +43,8 @@ export default function SettingsPage() {
   const [showIGManual, setShowIGManual] = useState(false);
   const [igUserToken, setIgUserToken] = useState('');
   const [igUserId, setIgUserId] = useState('');
+  const [manualNetwork, setManualNetwork] = useState('instagram');
+  const [manualUsername, setManualUsername] = useState('');
 
   const queryClient = useQueryClient();
   const connectedIds = user?.connectedNetworks?.map(n => n.network) || [];
@@ -70,10 +72,10 @@ export default function SettingsPage() {
     if (!igUserToken || !igUserId) return toast.error('Completá ambos campos');
 
     connectManualMutation.mutate({
-      network: 'instagram',
+      network: manualNetwork,
       accessToken: igUserToken,
       userId: igUserId,
-      username: 'Cuenta Manual',
+      username: manualUsername || `@${manualNetwork}_cuenta`,
       avatar: '',
     });
   };
@@ -234,8 +236,23 @@ export default function SettingsPage() {
             </p>
 
             <form onSubmit={handleManualIGConnect} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div style={{ display: 'flex', gap: 12 }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 6 }}>Red Social</label>
+                  <select value={manualNetwork} onChange={(e) => setManualNetwork(e.target.value)}
+                    style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 13, background: '#f8fafc' }}>
+                    <option value="instagram">Instagram (Business ID)</option>
+                    <option value="facebook">Facebook (Page ID)</option>
+                  </select>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 6 }}>Nombre de usuario/Página</label>
+                  <input type="text" value={manualUsername} onChange={(e) => setManualUsername(e.target.value)} placeholder="Ej: @mi_empresa"
+                    style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 13 }} />
+                </div>
+              </div>
               <div>
-                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 6 }}>Instagram Business Account ID</label>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 6 }}>ID (Instagram Business / Facebook Page)</label>
                 <input type="text" value={igUserId} onChange={(e) => setIgUserId(e.target.value)} placeholder="Ej: 178414012345678"
                   style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 13 }} />
               </div>
@@ -246,7 +263,7 @@ export default function SettingsPage() {
               </div>
               <button type="submit" disabled={connectManualMutation.isPending}
                 style={{ background: '#6366f1', color: '#fff', border: 'none', padding: '12px', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
-                {connectManualMutation.isPending ? 'Conectando...' : 'Guardar Conexión'}
+                {connectManualMutation.isPending ? 'Confirmar Conexión' : 'Guardar Conexión'}
               </button>
             </form>
           </motion.div>
