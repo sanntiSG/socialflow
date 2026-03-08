@@ -116,37 +116,46 @@ const publishToInstagram = async (opts: any) => {
     mediaParams.image_url = opts.mediaUrl;
   }
 
-  console.log(`[Instagram] Creando contenedor...`);
-  const containerResponse = await axios.post(mediaEndpoint, mediaParams);
-  const creationId = containerResponse.data.id;
-  console.log(`[Instagram] Contenedor creado: ${creationId}`);
+  try {
+    console.log(`[Instagram] Creando contenedor...`);
+    const containerResponse = await axios.post(mediaEndpoint, mediaParams);
+    const creationId = containerResponse.data.id;
+    console.log(`[Instagram] Contenedor creado: ${creationId}`);
 
-  // Paso 2: Para videos/Reels, debemos esperar a que se procese
-  if (isVideo) {
-    let status = 'IN_PROGRESS';
-    let attempts = 0;
-    while (status !== 'FINISHED' && attempts < 10) {
-      console.log(`[Instagram] Verificando estado del contenedor (intento ${attempts + 1})...`);
-      const statusRes = await axios.get(`https://graph.facebook.com/v18.0/${creationId}`, {
-        params: { fields: 'status_code', access_token: opts.accessToken }
-      });
-      status = statusRes.data.status_code;
-      if (status === 'FINISHED') break;
-      if (status === 'ERROR') throw new Error('Error al procesar el video en Instagram');
+    // Paso 2: Para videos/Reels, debemos esperar a que se procese
+    if (isVideo) {
+      let status = 'IN_PROGRESS';
+      let attempts = 0;
+      while (status !== 'FINISHED' && attempts < 15) {
+        console.log(`[Instagram] Verificando estado del contenedor (intento ${attempts + 1})...`);
+        const statusRes = await axios.get(`https://graph.facebook.com/v18.0/${creationId}`, {
+          params: { fields: 'status_code', access_token: opts.accessToken }
+        });
+        status = statusRes.data.status_code;
+        console.log(`[Instagram] Estado: ${status}`);
+        if (status === 'FINISHED') break;
+        if (status === 'ERROR') throw new Error('Error al procesar el video en Instagram');
 
-      await new Promise(resolve => setTimeout(resolve, 5000));
-      attempts++;
+        await new Promise(resolve => setTimeout(resolve, 10000)); // Esperar 10s entre intentos
+        attempts++;
+      }
+      if (status !== 'FINISHED') throw new Error('Timeout procesando video en Instagram');
     }
+
+    // Paso 3: Publicar el contenedor
+    console.log(`[Instagram] Publicando medio...`);
+    const publishRes = await axios.post(
+      `https://graph.facebook.com/v18.0/${opts.userId}/media_publish`,
+      { access_token: opts.accessToken, creation_id: creationId }
+    );
+
+    return publishRes.data;
+  } catch (err: any) {
+    if (err.response) {
+      console.error('[Instagram Error Details]:', JSON.stringify(err.response.data, null, 2));
+    }
+    throw err;
   }
-
-  // Paso 3: Publicar el contenedor
-  console.log(`[Instagram] Publicando medio...`);
-  const publishRes = await axios.post(
-    `https://graph.facebook.com/v18.0/${opts.userId}/media_publish`,
-    { access_token: opts.accessToken, creation_id: creationId }
-  );
-
-  return publishRes.data;
 };
 
 const publishToTikTok = async (opts: any) => {
